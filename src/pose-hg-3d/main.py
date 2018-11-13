@@ -2,16 +2,17 @@ import os
 import time
 import datetime
 
+import ref
+from opts import opts
+from utils.logger import Logger
+
 import torch
 import torch.utils.data
-from opts import opts
-import ref
-from models.hg_3d import HourglassNet3D
 from utils.utils import adjust_learning_rate
 from datasets.fusion import Fusion
 from datasets.h36m import H36M
 from datasets.mpii import MPII
-from utils.logger import Logger
+from models.hg_3d import HourglassNet3D
 from train import train, val
 
 def main():
