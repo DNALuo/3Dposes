@@ -1,15 +1,16 @@
+import cv2
+import torch
 import torch.utils.data as data
 import numpy as np
-import ref
-import torch
 from h5py import File
-import cv2
+
+import ref
 from utils.utils import Rnd, Flip, ShuffleLR
 from utils.img import Crop, DrawGaussian, Transform
 
 class MPII(data.Dataset):
   def __init__(self, opt, split, returnMeta = False):
-    print '==> initializing 2D {} data.'.format(split)
+    f"==> initializing 2D {split} data."
     annot = {}
     tags = ['imgname','part','center','scale']
     f = File('{}/mpii/annot/{}.h5'.format(ref.dataDir, split), 'r')
@@ -17,7 +18,7 @@ class MPII(data.Dataset):
       annot[tag] = np.asarray(f[tag]).copy()
     f.close()
 
-    print 'Loaded 2D {} {} samples'.format(split, len(annot['scale']))
+    f"Loaded 2D {split} {len(annot['scale'])} samples."
     
     self.split = split
     self.opt = opt

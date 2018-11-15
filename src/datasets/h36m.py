@@ -1,7 +1,7 @@
+import torch
 import torch.utils.data as data
 import numpy as np
 import ref
-import torch
 from h5py import File
 import cv2
 from utils.utils import Rnd, Flip, ShuffleLR
@@ -9,7 +9,7 @@ from utils.img import Crop, DrawGaussian, Transform3D
 
 class H36M(data.Dataset):
   def __init__(self, opt, split):
-    print '==> initializing 3D {} data.'.format(split)
+    f"==> initializing 3D {split} data."
     annot = {}
     tags = ['action', 'bbox', 'camera', 'id', 'joint_2d', 'joint_3d_mono', 'subaction', 'subject', 'istrain']
     f = File('../data/h36m/annotSampleTest.h5', 'r')
@@ -27,7 +27,7 @@ class H36M(data.Dataset):
     self.annot = annot
     self.nSamples = len(self.annot['id'])
     
-    print 'Loaded 3D {} {} samples'.format(split, len(self.annot['id']))
+    f"Loaded 3D {split} {len(self.annot['id'])} samples"
   
   def LoadImage(self, index):
     folder = 's_{:02d}_act_{:02d}_subact_{:02d}_ca_{:02d}'.format(self.annot['subject'][index], self.annot['action'][index], \

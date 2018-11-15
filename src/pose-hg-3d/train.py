@@ -8,7 +8,7 @@ import cv2
 import ref
 from progress.bar import Bar
 
-# Basic step for tran or evaluation
+# Basic step for train or evaluation
 def step(split, epoch, opt, dataLoader, model, criterion, optimizer = None):
   # Choose the mode
   ## Train mode 
