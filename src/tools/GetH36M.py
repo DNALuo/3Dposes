@@ -8,7 +8,7 @@ subject_list = [[1, 5, 6, 7, 8], [9, 11]]
 action_list = np.arange(2, 17)
 subaction_list = np.arange(1, 3)
 camera_list = np.arange(1, 5)
-IMG_PATH = '/home/zxy/Datasets/Human3.6M/images/'
+IMG_PATH = '/mnt/Data/Human3.6M/images/'
 SAVE_PATH = '../../data/h36m/'
 annot_name = 'matlab_meta.mat'
 
