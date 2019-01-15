@@ -99,7 +99,7 @@ def Crop(img, center, scale, rot, res):
     if newSize < 2:
       return torch.from_numpy(newImg.transpose(2, 0, 1).astype(np.float32) / 256.)
     else:
-      tmpImg = cv2.resize(tmpImg, (newSize_wd, newSize_ht)) #TODO
+      tmpImg = cv2.resize(tmpImg, (newSize_wd, newSize_ht))
       ht, wd = tmpImg.shape[0], tmpImg.shape[1]
     
   c, s = 1.0 * center / scaleFactor, scale / scaleFactor
