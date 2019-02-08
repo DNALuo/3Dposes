@@ -4,8 +4,8 @@ import numpy as np
 import ref
 from h5py import File
 import cv2
-from utils.utils import Rnd, Flip, ShuffleLR
-from utils.img import Crop, DrawGaussian, Transform3D
+# from ..utils.utils import Rnd, Flip, ShuffleLR
+from ..utils.img import Crop, DrawGaussian, Transform3D
 
 class H36M(data.Dataset):
   def __init__(self, opt, split):
