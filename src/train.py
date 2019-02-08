@@ -1,81 +1,72 @@
-import cv2
 import torch
-import numpy as np
 from progress.bar import Bar
 
-import ref
-from utils.utils import AverageMeter
-from utils.eval import Accuracy, getPreds, MPJPE
-from utils.debugger import Debugger
-from models.layers.FusionCriterion import FusionCriterion
+from utils.eval import AverageMeter, get_preds, get_ref, original_coordinate, error, accuracy
+from utils.utils import set_sequence_length
 
-# Basic step for train or evaluation
-def step(split, epoch, opt, dataLoader, model, criterion, optimizer = None):
-  
-  # Choose the mode
-  ## Train mode 
-  if split == 'train':
-    model.train()
-  ## Evaluate mode(Normally without Dropout and BatchNorm)
-  else:
-    model.eval()
 
-  # Load default values
-  Loss, Acc, Mpjpe = AverageMeter(), AverageMeter(), AverageMeter()
-    
-  # Show iteration using Bar
-  nIters = len(dataLoader)
-  bar = Bar('==>', max=nIters)
-  # Loop in dataloader
-  for i, (input, target2D, target3D, meta) in enumerate(dataLoader):
-    ## Wraps tensors and records the operations applied to it
-    input_var = torch.autograd.Variable(input).float().cuda()
-    target2D_var = torch.autograd.Variable(target2D).float().cuda()
-    # For now, 3D data is not needed
-    # target3D_var = torch.autograd.Variable(target3D).float().cuda()
-    
-    ## Forwad propagation
-    output = model(input_var)
-    ## Original Output of Regression
-    reg = output[opt.nStack]
-    ## Debug level >= 2, show the 2D prediction compared with 2D groundtruth
-    if opt.DEBUG >= 2:
-      gt = getPreds(target2D.cpu().numpy()) * 4
-      pred = getPreds((output[opt.nStack - 1].data).cpu().numpy()) * 4
-      debugger = Debugger()
-      debugger.addImg((input[0].numpy().transpose(1, 2, 0)*256).astype(np.uint8))
-      debugger.addPoint2D(pred[0], (255, 0, 0))
-      debugger.addPoint2D(gt[0], (0, 0, 255))
-      debugger.showImg()
-      debugger.saveImg('debug/{}.png'.format(i))
-    # Fuse the criterion(init(regWeight, varWeight))((input, target))
-    loss = FusionCriterion(opt.regWeight, opt.varWeight)(reg, target3D_var)
-    # Update the 3D loss
-    Loss3D.update(loss.data[0], input.size(0))
-    for k in range(opt.nStack):
-      loss += criterion(output[k], target2D_var)
+# Basic step for training or evaluation
+def step(phase, epoch, opt, dataloader, model, criterion, optimizer=None):
+    # Choose the phase(Evaluate phase-Normally without Dropout and BatchNorm)
+    if phase == 'train':
+        model.train()
+    else:
+        model.eval()
+    # Load default values
+    Loss, Err, Acc = AverageMeter(), AverageMeter(), AverageMeter()
+    seqlen = set_sequence_length(opt.MinSeqLenIndex, opt.MaxSeqLenIndex, epoch)
+    # Show iteration using Bar
+    nIters = len(dataloader)
+    bar = Bar(f'{opt.expID}', max=nIters)
+    # Loop in dataloader
+    for i, gt in enumerate(dataloader):
+        ## Wraps tensors and records the operations applied to it
+        input, label = gt['input'], gt['label']
+        gtpts, center, scale = gt['gtpts'], gt['center'], gt['scale']
+        input_var = input[:, 0, ].float().cuda(device=opt.device, non_blocking=True)
+        label_var = label.float().cuda(device=opt.device, non_blocking=True)
+        Loss.reset()
+        Err.reset()
+        Acc.reset()
+        ### if it is 3D, may need the nOutput to get the different target, not just only the heatmap
+        ## Forwad propagation
+        output = model(input_var)
+        ## Get model outputs and calculate loss
+        loss = criterion(output, label_var)
+        ## Backward + Optimize only if in training phase
+        if phase == 'train':
+            ## Zero the parameter gradients
+            optimizer.zero_grad()
+            loss.mean().backward()
+            optimizer.step()
+        Loss.update(loss.sum())
+        ## Compute the accuracy
+        # acc = Accuracy(opt, output.data.cpu().numpy(), labels_var.data.cpu().numpy())
+        ref = get_ref(opt.dataset, scale)
+        for j in range(opt.preSeqLen):
+            if j <= seqlen:
+                pred = get_preds(output[:,j,].float())
+                pred = original_coordinate(pred, center, scale, opt.outputRes)
+                err, ne = error(pred, gtpts[:,j,], ref)
+                acc = accuracy(pred, gtpts[:,j,], ref)
+                # acc, na = accuracy(pred, gtpts, opt.outputRes, ref)
+                # assert ne == na, "ne must be the same as na"
+                # acc[j] = acc/ne
+                Err.update(err/ne)
+                Acc.update(acc/ne)
 
-    Loss.update(loss.data[0], input.size(0))
-    Acc.update(Accuracy((output[opt.nStack - 1].data).cpu().numpy(), (target2D_var.data).cpu().numpy()))
-    mpjpe, num3D = MPJPE((output[opt.nStack - 1].data).cpu().numpy(), (reg.data).cpu().numpy(), meta)
-    if num3D > 0:
-      Mpjpe.update(mpjpe, num3D)
-    if split == 'train':
-      optimizer.zero_grad()
-      loss.backward()
-      optimizer.step()
- 
-    Bar.suffix = '{split} Epoch: [{0}][{1}/{2}]| Total: {total:} | ETA: {eta:} | Loss {loss.avg:.6f} \
-        | Loss3D {loss3d.avg:.6f} | Acc {Acc.avg:.6f} | Mpjpe {Mpjpe.avg:.6f} ({Mpjpe.val:.6f})'.format(epoch, \
-        i, nIters, total=bar.elapsed_td, eta=bar.eta_td, loss=Loss, Acc=Acc, split = split, Mpjpe=Mpjpe, loss3d = Loss3D)
-    bar.next()
+        # acc = torch.Tensor(acc)
 
-  bar.finish()
-  return Loss.avg, Acc.avg, Mpjpe.avg
-  
+        Bar.suffix = f'{phase}[{epoch}][{i}/{nIters}]|Total:{bar.elapsed_td}|ETA:{bar.eta_td}|Loss{Loss.val:.6f}|Err{Err.avg:.6f}|Acc{Acc.avg:.6f}'
+        bar.next()
 
-def train(epoch, opt, train_loader, model, criterion, optimizer):
-  return step('train', epoch, opt, train_loader, model, criterion, optimizer)
-  
-def val(epoch, opt, val_loader, model, criterion):
-  return step('val', epoch, opt, val_loader, model, criterion)
+    bar.finish()
+    return Loss.val, Acc.avg
+
+
+def train(epoch, opt, dataloader, model, criterion, optimizer):
+    return step('train', epoch, opt, dataloader, model, criterion, optimizer)
+
+
+def val(epoch, opt, dataloader, model, criterion):
+    return step('val', epoch, opt, dataloader, model, criterion)

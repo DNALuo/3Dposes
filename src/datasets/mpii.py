@@ -5,8 +5,8 @@ import numpy as np
 from h5py import File
 
 import ref
-from utils.utils import Rnd, Flip, ShuffleLR
-from utils.img import Crop, DrawGaussian, Transform
+from ..utils.utils import Rnd, Flip, ShuffleLR
+from ..utils.img import Crop, DrawGaussian, Transform
 
 class MPII(data.Dataset):
   def __init__(self, opt, split, returnMeta = False):
@@ -17,8 +17,7 @@ class MPII(data.Dataset):
     for tag in tags:
       annot[tag] = np.asarray(f[tag]).copy()
     f.close()
-
-    f"Loaded 2D {split} {len(annot['scale'])} samples."
+   f"Loaded 2D {split} {len(annot['scale'])} samples."
     
     self.split = split
     self.opt = opt

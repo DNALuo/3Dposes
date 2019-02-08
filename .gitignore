@@ -1,0 +1,14 @@
+# ignore all .pyc files
+*.pyc
+
+# ignore all __pycache__ folders
+__pycache__
+
+# ignore .idea folder
+.idea
+
+# ignore data folder
+data/
+
+# ignore exp folder
+exp/
