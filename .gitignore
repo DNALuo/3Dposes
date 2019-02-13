@@ -24,3 +24,6 @@ exp/
 # ignore ref source code from Xingyi Zhou
 pose-hg-2d
 pose-hg-3d
+
+# ignore all the trained models
+*.pth
