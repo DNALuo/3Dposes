@@ -5,7 +5,7 @@ import torch.utils.data as tud
 # import scipy.io as sio
 
 from opts import Opts
-from datasets.penn import PENN
+from datasets.penn import PENN_CROP
 from models.hg_2D_res_CLSTM import Hourglass2DPrediction
 from train import train, val
 from utils.utils import adjust_learning_rate
@@ -23,7 +23,7 @@ def main():
     time_start = time.time()
     # TODO: select the dataset by the options
     # Set up dataset
-    train_loader_unit = PENN(opts, 'train')
+    train_loader_unit = PENN_CROP(opts, 'train')
     train_loader = tud.DataLoader(
         train_loader_unit,
         batch_size = opts.trainBatch,
@@ -31,7 +31,7 @@ def main():
         num_workers = int(opts.num_workers)
     )
     val_loader = tud.DataLoader(
-        PENN(opts, 'val'),
+        PENN_CROP(opts, 'val'),
         batch_size = 1,
         shuffle = False,
         num_workers = int(opts.num_workers)
@@ -72,8 +72,8 @@ def main():
         if epoch % opts.valIntervals == 0:
             # TODO: Test the validation part
             ### Validation
-            # loss_val, pck_val = val(epoch, opts, val_loader, model, criterion)
-            # print(f"epoch: {epoch} | loss_val: {loss_val}| PCK_val: {pck_val}\n")
+            loss_val, pck_val = val(epoch, opts, val_loader, model, criterion)
+            print(f"epoch: {epoch} | loss_val: {loss_val}| PCK_val: {pck_val}\n")
             ### Save the model
             torch.save(model, os.path.join(opts.save_dir, f"model_{epoch}.pth"))
             ### TODO: save the preds for the validation

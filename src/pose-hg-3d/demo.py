@@ -2,7 +2,7 @@ import sys
 import torch
 from opts import opts
 import ref
-from utils.debugger import Debugger
+from utils.visualize import Debugger
 from utils.eval import getPreds
 import cv2
 import numpy as np

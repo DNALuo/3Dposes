@@ -51,18 +51,18 @@ def get_preds(hm):
     return preds
 
 
-def original_coordinate(pred, center, scale, outputRes):
+def original_coordinate(pred, center, scale, outputRes, rot = 0):
     for i in range(pred.shape[0]):
         for j in range(pred.shape[1]):
-            pred[i, j] = torch.from_numpy(Transform(pred[i][j], center[i], scale[i][0], 0, outputRes, True))
+            pred[i, j] = torch.from_numpy(Transform(pred[i][j], center[i], scale[i], rot, outputRes, True))
 
     return pred.double()
 
 
 def error(prePst, gtpts, ref):
     """
-    :param   prePst  : N x d x 2
-    :param   gtpts   : N x d x 2
+    :param   prePst  : N x num_joints x 2
+    :param   gtpts   : N x num_joints x 2
     :param   ref     : N x 1
     :return: error, n: 1
     """
@@ -72,7 +72,7 @@ def error(prePst, gtpts, ref):
             if gtpts[i,j,0] != 0 and gtpts[i,j,1] != 0:
                 n[i] = n[i] + 1
                 e[i] = e[i] + torch.dist(gtpts[i,j], prePst[i,j].double()) / ref[i]
-    return e.sum(), n.sum()
+    return e.sum()/n.sum(), n.sum()
 
 
 def calc_dists(prePst, gt, normalize):
@@ -95,81 +95,44 @@ def distAccuracy(dist, thr=0.5):
 
 
 # Accuracy for Penn_crop
-def coordinates_accuracy(prePst, labels, thr, idxs, ref):
-    '''
+# def accuracy(prePst, labels, ref, idxs = None, thr = 0.05):
+def accuracy(prePst, labels, ref, idxs = None, thr = 0.5):
+    """
     :param prePst:
     :param labels:
-    :param thr:
-    :param idxs:
     :param ref:
+    :param idxs:
+    :param thr:
     :return:
-    '''
+    """
     dists = calc_dists(prePst, labels, ref)
     # TODO: import dataset for different configuration
-    acc = {}
+    acc = np.zeros(dists.shape[0])
     avgAcc = 0.0
     badIdxsCount = 0
 
     if idxs is None:
         for i in range(dists.shape[0]):
-            acc[i+1] = distAccuracy(dists[i], thr)
-            if acc[i+1] >= 0:
-                avgAcc += acc[i+1]
+            acc[i] = distAccuracy(dists[i], thr)
+            if acc[i] >= 0:
+                avgAcc += acc[i]
             else:
                 badIdxsCount += 1
         if badIdxsCount < dists.shape[0]:
-            acc[0] = avgAcc / (dists.shape[0] - badIdxsCount)
+            return avgAcc / (dists.shape[0] - badIdxsCount), dists.shape[0]-badIdxsCount
         else:
-            acc[0] = 0
+            return 0, badIdxsCount
     else:
         for i in range(len(idxs)):
-            acc[i+1] = distAccuracy(dists[idxs[i]], thr)
-            if acc[i+1] >= 0:
-                avgAcc += acc[i+1]
+            acc[i] = distAccuracy(dists[idxs[i]], thr)
+            if acc[i] >= 0:
+                avgAcc += acc[i]
             else:
                 badIdxsCount += 1
-        # acc[0] = avgAcc / (len(idxs) - badIdxsCount)
-        if badIdxsCount < dists.shape[0]:
-            acc[0] = avgAcc / (len(idxs) - badIdxsCount)
+        if badIdxsCount < len(idxs):
+            return avgAcc / (len(idxs) - badIdxsCount), len(idxs) - badIdxsCount
         else:
-            acc[0] = 0
-
-    return acc[0]
-
-
-
-# Computer Accuracy
-def accuracy(prePst, labels, ref):
-    """
-    :param prePst: N x d x 2
-    :param labels:  N x d x 2
-    :param outputRes: res
-    :param ref:     N x 1
-    :return: acc
-    """
-    return coordinates_accuracy(prePst, labels, 0.05, None, ref)
-
-
-# Accuracy for MPII
-def Accuracy(opt, output, target):
-    preds = get_preds(output)
-    gt = get_preds(target)
-    dists = calc_dists(preds, gt, np.ones(preds.shape[0]) * opt.outputRes / 10)
-    acc = np.zeros(len(opt.accIdxs))
-    avgAcc = 0
-    badIdxCount = 0
-
-    for i in range(len(opt.accIdxs)):
-        acc[i] = distAccuracy(dists[opt.accIdxs[i]])
-        if acc[i] >= 0:
-            avgAcc = avgAcc + acc[i]
-        else:
-            badIdxCount = badIdxCount + 1
-
-    if badIdxCount == len(opt.accIdxs):
-        return 0
-    else:
-        return avgAcc / (len(opt.accIdxs) - badIdxCount)
+            return 0
 
 
 def MPJPE(opt, output2D, output3D, meta):

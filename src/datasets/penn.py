@@ -5,21 +5,39 @@ from h5py import File
 import cv2
 from utils.utils import Rnd, Flip, ShuffleLR
 from utils.img import Crop, DrawGaussian, Transform
-# from src.opts import Opts
 
 
-class PENN(data.Dataset):
+# Penn Action Official Joints Info, Menglong
+# 0.  head
+# 1.  left_shoulder  2.  right_shoulder
+# 3.  left_elbow     4.  right_elbow
+# 5.  left_wrist     6.  right_wrist
+# 7.  left_hip       8.  right_hip
+# 9.  left_knee      10. right_knee
+# 11. left_ankle     12. right_ankle
+
+# Penn-Crop Joints Info for Dataset, Yuwei
+# 0.  head
+# 1.  right_shoulder  2.  left_shoulder
+# 3.  right_elbow     4.  left_elbow
+# 5.  right_wrist     6.  left_wrist
+# 7.  right_hip       8.  left_hip
+# 9.  right_knee      10. left_knee
+# 11. right_ankle     12. left_ankle
+
+
+class PENN_CROP(data.Dataset):
     def __init__(self, opt, split):
 
-        print('==> initializing 2D PENN {} data.'.format(split))
+        print(f'==> initializing 2D PENN {split} data.')
         annot = {}
         tags = ['ind2sub', 'part']
-        f = File('{}/penn-crop/{}.h5'.format(opt.data_dir, split), 'r')
+        f = File(f'{opt.data_dir}/penn-crop/{split}.h5', 'r')
         for tag in tags:
             annot[tag] = np.asarray(f[tag]).copy()
         f.close()
 
-        print('Loaded 2D {} {} samples'.format(split, len(annot['ind2sub'])))
+        print(f"Loaded 2D {split} {len(annot['ind2sub'])} samples")
 
         self.split = split
         self.opt = opt
@@ -27,20 +45,19 @@ class PENN(data.Dataset):
         # self.returnMeta = returnMeta
         self.nPhase = opt.preSeqLen
         self.inputRes = opt.inputRes
-        self.nJoints = opt.nJoints
         self.outputRes = opt.outputRes
         self.seqId = self.annot['ind2sub'][:, 0]
         self.frameId = self.annot['ind2sub'][:, 1]
         self.part = self.annot['part']
+        self.nJoints = self.part.shape[1]
+        self.skeleton = [[1, 3], [3, 5], [7, 9],  [9, 11],
+                         [2, 4], [4, 6], [8, 10], [10, 12],
+                         [0, 7], [0, 8], [1, 2]]
         self.data_dir = opt.data_dir
 
     def getSeq(self, i):
-        # print('the index is:',i)
         id = self.seqId[i]
-        # print('the id is:',id)
-        # print('the index in the video:',self.frameId[i])
         nFrame = np.sum(self.seqId == id)
-        # print('the num of frame in the id is:',nFrame)
         ind = np.linspace(i, i + nFrame - 1, self.nPhase)
         ind = np.round(ind)
         assert (len(ind) == self.nPhase)
@@ -63,10 +80,9 @@ class PENN(data.Dataset):
         return center, scale
 
     def LoadImage(self, index):
-        seqpath = '{}/penn-crop/frames/{:04d}'.format(self.data_dir, self.seqId[index])
-        framepath = '{}/{:06d}.jpg'.format(seqpath, self.frameId[index])
+        seqpath = f"{self.data_dir}/penn-crop/frames/{self.seqId[index]:04d}"
+        framepath = f"{seqpath}/{self.frameId[index]:06d}.jpg"
         img = cv2.imread(framepath)
-        # print(framepath)
         return img
 
     def GetPartInfo(self, index):
@@ -78,12 +94,16 @@ class PENN(data.Dataset):
 
     def __getitem__(self, index):
         seqIdx = self.getSeq(index)
-        # print('index is:',index)
+        """
+        input: predSeqLen x 3 x inputRes x inputRes   Input image After Crop and transform
+        hmap:  predSeqLen x numJoints x outputRes x outputRes
+        gtpts: predSeqLen x numJoints x 2             Joints Positions BEFORE crop and transform
+        proj:  predSeqLen x numJoints x 2             Joints Positions AFTER crop and transform
+        """
         input = np.zeros((self.nPhase, 3, self.inputRes, self.inputRes))
         hmap = np.zeros((self.nPhase, self.nJoints, self.outputRes, self.outputRes))
         gtpts = np.zeros((self.nPhase, self.nJoints, 2))
         repos, trans, focal, proj = {}, {}, {}, {}
-        # print('len of seqIdx:', len(seqIdx))
         for i in range(len(seqIdx)):
             sid = seqIdx[i]
             im = self.LoadImage(int(sid))
@@ -103,7 +123,6 @@ class PENN(data.Dataset):
                 if pts[j][0] != 0 and pts[j][1] != 0:
                     DrawGaussian(hm[j], np.round(pj[j]), 2)
 
-            # print(np.shape(inp))
             inp = inp.transpose(2, 1, 0)
             input[i] = inp
             repos[i] = np.zeros((np.size(1), 3))
@@ -121,30 +140,25 @@ class PENN(data.Dataset):
                 input[i][:, :, 0] = input[i][:, :, 0] * m1
                 np.clip(input[i][:, :, 0], 0, 1, out=input[i][:, :, 0])
 
-                input[i][:, :, 1] = input[i][:, :, 1] * m1
+                input[i][:, :, 1] = input[i][:, :, 1] * m2
                 np.clip(input[i][:, :, 1], 0, 1, out=input[i][:, :, 1])
 
-                input[i][:, :, 2] = input[i][:, :, 2] * m2
+                input[i][:, :, 2] = input[i][:, :, 2] * m3
                 np.clip(input[i][:, :, 2], 0, 1, out=input[i][:, :, 2])
 
-                # np.savetxt('befornor.txt', a)
-                # np.savetxt('afternor.txt', input[i][:, :, 0])
-        if np.random.uniform() <= 0.5:
-            for i in range(len(input)):
-                input[i] = cv2.flip(input[i], 1)
-                # print('hmap before:',hmap[i][0,:,:])
-                # scio.savemat('hmapB.mat',{'hmB':hmap[i]})
-                hmap[i] = Flip(ShuffleLR(hmap[i]))
-                # scio.savemat('hmapA.mat', {'hmA': hmap[i]})
-                # print('before shuffle:', proj[i])
-                proj[i] = ShuffleLR(proj[i])
-                # print('after shuffle:', proj[i])
-                ind = np.where(proj[i] == 0)
-                proj[i][:, 0] = self.outputRes - proj[i][:, 0] + 1
-                if len(ind[0]) != 0:
-                    proj[i][ind[0][0]] = 0
+            if np.random.uniform() <= 0.5:
+                for i in range(len(input)):
+                    input[i] = cv2.flip(input[i], 1)
+                    hmap[i] = Flip(ShuffleLR(hmap[i]))
+                    proj[i] = ShuffleLR(proj[i])
+                    ind = np.where(proj[i] == 0)
+                    proj[i][:, 0] = self.outputRes - proj[i][:, 0] + 1
+                    if len(ind[0]) != 0:
+                        proj[i][ind[0][0]] = 0
 
-        return {'input': input, 'label': hmap, 'gtpts': gtpts, 'center': center, 'scale': scale}
+
+
+        return {'input': input, 'label': hmap, 'gtpts': gtpts, 'center': center, 'scale': scale,'proj':proj}
 
     def __len__(self):
         return len(self.annot['ind2sub'])

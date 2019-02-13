@@ -45,10 +45,10 @@ def step(phase, epoch, opt, dataloader, model, criterion, optimizer=None):
         ref = get_ref(opt.dataset, scale)
         for j in range(opt.preSeqLen):
             if j <= seqlen:
-                pred = get_preds(output[:,j,].float())
+                pred = get_preds(output[:, j, ].float())
                 pred = original_coordinate(pred, center, scale, opt.outputRes)
-                err, ne = error(pred, gtpts[:,j,], ref)
-                acc = accuracy(pred, gtpts[:,j,], ref)
+                err, ne = error(pred, gtpts[:, j, ], ref)
+                acc = accuracy(pred, gtpts[:, j, ], ref)
                 # acc, na = accuracy(pred, gtpts, opt.outputRes, ref)
                 # assert ne == na, "ne must be the same as na"
                 # acc[j] = acc/ne

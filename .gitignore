@@ -8,10 +8,15 @@ __pycache__
 .idea
 
 # ignore .ipynb_checkpoints
-.ipynb_checkpoints/
+.ipynb_checkpoints
+.ipynb
 
 # ignore data folder
 data/
 
 # ignore exp folder
 exp/
+
+# ignore ref source code from Xingyi Zhou
+pose-hg-2d
+pose-hg-3d
