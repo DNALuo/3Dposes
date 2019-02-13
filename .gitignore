@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # ignore all .pyc files
 *.pyc
 
@@ -20,3 +21,23 @@ exp/
 # ignore ref source code from Xingyi Zhou
 pose-hg-2d
 pose-hg-3d
+=======
+# ignore all .pyc files
+*.pyc
+
+# ignore all __pycache__ folders
+__pycache__
+
+# ignore .idea folder
+.idea
+
+# ignore .ipynb_checkpoints
+.ipynb_checkpoints
+.ipynb
+
+# ignore data folder
+data/
+
+#ignore exp folder
+exp/
+>>>>>>> 7c234f0346a56d52e13f09f8d7179d3fe92b73d3
