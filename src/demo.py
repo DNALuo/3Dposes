@@ -36,42 +36,37 @@ def main():
         opts.nJoints = val_dataset.nJoints
         opts.skeleton = val_dataset.skeleton
         for i, gt in enumerate(val_loader):
-            # # Test Visualizer, Input and get_preds
-            # if i == 0:
-            #     input, label = gt['input'], gt['label']
-            #     gtpts, center, scale, proj = gt['gtpts'], gt['center'], gt['scale'], gt['proj']
-            #     input_var = input[:, 0, ].float().cuda(device=opts.device, non_blocking=True)
-            #     output = label
-            #     # Visualizer Object
-            #     ## Initialize
-            #     v = Visualizer(opts.nJoints, opts.skeleton, opts.outputRes)
-            #     ## Add input image
-            #     v.add_img(input[0,0,].transpose(2, 0).numpy().astype(np.uint8))
-            #     ## Get the predicted joints
-            #     predJoints = get_preds(output[:, 0, ])
-            #     # ## Add joints and skeleton to the figure
-            #     v.add_2d_joints_skeleton(predJoints, (0, 0, 255))
-            #     ## Show image
-            #     v.show_img(pause=True)
-            #     break
-            # Test Loss, Err and Acc
+            # Test Visualizer, Input and get_preds
             if i == 0:
                 input, label = gt['input'], gt['label']
                 gtpts, center, scale, proj = gt['gtpts'], gt['center'], gt['scale'], gt['proj']
                 input_var = input[:, 0, ].float().cuda(device=opts.device, non_blocking=True)
-                output = label
+                # output = label
+                output = model(input_var)
+                # Test Loss, Err and Acc(PCK)
                 Loss, Err, Acc = AverageMeter(), AverageMeter(), AverageMeter()
                 ref = get_ref(opts.dataset, scale)
                 for j in range(opts.preSeqLen):
                     pred_hm = get_preds(output[:, j, ].float())
-                    pred_pts = original_coordinate(pred_hm, center[:,], scale, opts.outputRes)
+                    pred_pts = original_coordinate(pred_hm, center[:, ], scale, opts.outputRes)
                     err, ne = error(pred_pts, gtpts[:, j, ], ref)
                     acc, na = accuracy(pred_pts, gtpts[:, j, ], ref)
                     assert ne == na, "ne must be the same as na"
                     Err.update(err)
                     Acc.update(acc)
-                    print(j, Err.val, Acc.val)
-                print(Err.avg, Acc.avg)
+                    print(j, f"{Err.val:.6f}", Acc.val)
+                print('all', f"{Err.avg:.6f}", Acc.avg)
+                # Visualizer Object
+                ## Initialize
+                v = Visualizer(opts.nJoints, opts.skeleton, opts.outputRes)
+                ## Add input image
+                v.add_img(input[0,0,].transpose(2, 0).numpy().astype(np.uint8))
+                ## Get the predicted joints
+                predJoints = get_preds(output[:, 0, ])
+                # ## Add joints and skeleton to the figure
+                v.add_2d_joints_skeleton(predJoints, (0, 0, 255))
+                ## Show image
+                v.show_img(pause=True)
                 break
     else:
         print('NOT ready for the raw input outside the dataset')

@@ -72,7 +72,7 @@ def error(prePst, gtpts, ref):
             if gtpts[i,j,0] != 0 and gtpts[i,j,1] != 0:
                 n[i] = n[i] + 1
                 e[i] = e[i] + torch.dist(gtpts[i,j], prePst[i,j].double()) / ref[i]
-    return e.sum()/n.sum(), n.sum()
+    return (e.sum()/n.sum()).numpy(), n.sum()
 
 
 def calc_dists(prePst, gt, normalize):
