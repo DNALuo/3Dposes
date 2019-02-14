@@ -14,6 +14,7 @@ def step(phase, epoch, opt, dataloader, model, criterion, optimizer=None):
         model.eval()
     # Load default values
     Loss, Err, Acc = AverageMeter(), AverageMeter(), AverageMeter()
+    Acc_tot = AverageMeter()
     seqlen = set_sequence_length(opt.MinSeqLenIndex, opt.MaxSeqLenIndex, epoch)
     # Show iteration using Bar
     nIters = len(dataloader)
@@ -45,23 +46,21 @@ def step(phase, epoch, opt, dataloader, model, criterion, optimizer=None):
         ref = get_ref(opt.dataset, scale)
         for j in range(opt.preSeqLen):
             if j <= seqlen:
-                pred = get_preds(output[:, j, ].float())
-                pred = original_coordinate(pred, center, scale, opt.outputRes)
-                err, ne = error(pred, gtpts[:, j, ], ref)
-                acc = accuracy(pred, gtpts[:, j, ], ref)
-                # acc, na = accuracy(pred, gtpts, opt.outputRes, ref)
-                # assert ne == na, "ne must be the same as na"
-                # acc[j] = acc/ne
-                Err.update(err/ne)
-                Acc.update(acc/ne)
+                pred_hm = get_preds(output[:, j, ].float())
+                pred_pts = original_coordinate(pred_hm, center[:, ], scale, opt.outputRes)
+                err, ne = error(pred_pts, gtpts[:, j, ], ref)
+                acc, na = accuracy(pred_pts, gtpts[:, j, ], ref)
+                assert ne == na, "ne must be the same as na"
+                Err.update(err)
+                Acc.update(acc)
+                Acc_tot.update(acc)
 
-        # acc = torch.Tensor(acc)
-
-        Bar.suffix = f'{phase}[{epoch}][{i}/{nIters}]|Total:{bar.elapsed_td}|ETA:{bar.eta_td}|Loss{Loss.val:.6f}|Err{Err.avg:.6f}|Acc{Acc.avg:.6f}'
+        Bar.suffix = f'{phase}[{epoch}][{i}/{nIters}]|Total:{bar.elapsed_td}' \
+            f'|ETA:{bar.eta_td}|Loss{Loss.val:.6f}|Err{Err.avg:.6f}|Acc{Acc.avg:.6f}'
         bar.next()
 
     bar.finish()
-    return Loss.val, Acc.avg
+    return Loss.val, Acc_tot.avg
 
 
 def train(epoch, opt, dataloader, model, criterion, optimizer):

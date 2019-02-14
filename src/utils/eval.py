@@ -69,7 +69,7 @@ def error(prePst, gtpts, ref):
     e, n = torch.zeros(gtpts.size(0)).double(), torch.zeros(gtpts.size(0)).double()
     for i in range(gtpts.size(0)):
         for j in range(gtpts.size(1)):
-            if gtpts[i,j,0] != 0 and gtpts[i,j,1] != 0:
+            if gtpts[i,j,0] != 0 and gtpts[i,j,1] != 0 and prePst[i, j, 0] > 0 and prePst[i, j, 1] > 0:
                 n[i] = n[i] + 1
                 e[i] = e[i] + torch.dist(gtpts[i,j], prePst[i,j].double()) / ref[i]
     return (e.sum()/n.sum()).numpy(), n.sum()
@@ -79,7 +79,7 @@ def calc_dists(prePst, gt, normalize):
     dists = np.zeros((prePst.shape[1], prePst.shape[0]))
     for i in range(prePst.shape[0]):
         for j in range(prePst.shape[1]):
-            if gt[i, j, 0] > 0 and gt[i, j, 1] > 0:
+            if gt[i, j, 0] > 0 and gt[i, j, 1] > 0 and prePst[i, j, 0] > 0 and prePst[i, j, 1] > 0:
                 dists[j][i] = torch.dist(gt[i][j], prePst[i][j]) / normalize[i]
             else:
                 dists[j][i] = -1
@@ -96,7 +96,7 @@ def distAccuracy(dist, thr=0.5):
 
 # Accuracy for Penn_crop
 # def accuracy(prePst, labels, ref, idxs = None, thr = 0.05):
-def accuracy(prePst, labels, ref, idxs = None, thr = 0.5):
+def accuracy(prePst, labels, ref, idxs = None, thr = 0.05):
     """
     :param prePst:
     :param labels:

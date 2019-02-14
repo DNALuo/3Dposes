@@ -16,7 +16,7 @@ def main():
     ## For PyTorch 0.4.1, cuda(device)
     opts.device = torch.device(f'cuda:{opts.gpu[0]}')
     print(opts.expID, opts.task,os.path.dirname(os.path.realpath(__file__)))
-    # Load the trained model
+    # Load the trained model test
     if opts.loadModel != 'none':
         model_path = os.path.join(opts.root_dir, opts.loadModel)
         model = torch.load(model_path).cuda(device=opts.device)

@@ -46,7 +46,6 @@ def main():
         model = torch.load(opts.loadModel).cuda(device=opts.device)
     # Set the Criterion and Optimizer
     criterion = torch.nn.MSELoss(reduce=False).cuda(device=opts.device)
-    # TODO: read the output number from the model, only heatmaps is 1
     # opts.nOutput = len(model.outnode.children)
     optimizer = torch.optim.RMSprop(model.parameters(), opts.LR,
                                     alpha=opts.alpha,
