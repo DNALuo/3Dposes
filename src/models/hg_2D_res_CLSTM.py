@@ -145,7 +145,6 @@ from .layers.Residual import Residual
 #         return out
 
 
-# TODO: Edit the CLSTM module to make it work
 # apply the LSTM conv on each pixel
 class CLSTM(nn.Module):
     """
@@ -170,19 +169,12 @@ class CLSTM(nn.Module):
         repDim = list(inp.unsqueeze(1).shape)
         repDim[1] = self.seqLength
         rep = inp.unsqueeze(1).expand(repDim)
-
         # Merge into one mini-batch
         x = inp.transpose(1, 2).transpose(2, 3)
         x = x.contiguous()
-        x = x.view(-1, self.inputSize)
+        # x = x.view(-1, self.inputSize)
         x = x.view(-1, 1, self.inputSize)
         x = nn.ZeroPad2d((0, 0, 0, 15))(x)
-        # self-written
-        # x = torch.zeros(inp.shape[0], self.seqLength, inp.shape[1], inp.shape[2], inp.shape[3]).cuda()
-        # for i in range(inp.shape[0]):
-        #     x[i, 0+self.seqLength*i,] = inp[i,]
-        # x = x.view(-1, self.seqLength, self.inputSize)
-
         # LSTM
         ## features on each pixel, i.o.w., 1 x 1 conv layers
         '''
@@ -204,7 +196,6 @@ class CLSTM(nn.Module):
         return out
 
 
-# TODO: Edit the HourglassLSTM module to make it work
 class HourglassLSTM(nn.Module):
     """
     One Hourglass with LSTM.
@@ -250,7 +241,6 @@ class HourglassLSTM(nn.Module):
         return up1 + up2
 
 
-# TODO: Check if the HourglassPrediction Module can work as wanted
 class Hourglass2DPrediction(nn.Module):
     def __init__(self, opt):
         super(Hourglass2DPrediction, self).__init__()
@@ -288,8 +278,6 @@ class Hourglass2DPrediction(nn.Module):
         x = self.maxpool(x)
         x = self.r2(x)
         x = self.r3(x)
-
-        out = []
         # Forecasting
         x = self.hgLSTM(x)
         # Linear layers to produce first set of predictions
@@ -298,6 +286,5 @@ class Hourglass2DPrediction(nn.Module):
         out = self.conv2(x)
         # Split output in batch dimension
         out = out.view(-1, self.seqLength, self.nJoints, self.outputRes, self.outputRes)
-        # out = out.split(1, 1)
 
         return out

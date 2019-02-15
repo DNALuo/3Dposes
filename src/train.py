@@ -50,13 +50,13 @@ def step(phase, epoch, opt, dataloader, model, criterion, optimizer=None):
                 pred_pts = original_coordinate(pred_hm, center[:, ], scale, opt.outputRes)
                 err, ne = error(pred_pts, gtpts[:, j, ], ref)
                 acc, na = accuracy(pred_pts, gtpts[:, j, ], ref)
-                assert ne == na, "ne must be the same as na"
+                # assert ne == na, "ne must be the same as na"
                 Err.update(err)
                 Acc.update(acc)
                 Acc_tot.update(acc)
 
         Bar.suffix = f'{phase}[{epoch}][{i}/{nIters}]|Total:{bar.elapsed_td}' \
-            f'|ETA:{bar.eta_td}|Loss{Loss.val:.6f}|Err{Err.avg:.6f}|Acc{Acc.avg:.6f}'
+            f'|ETA:{bar.eta_td}|Loss:{Loss.val:.6f}|Err:{Err.avg:.6f}|Acc:{Acc.avg:.6f}'
         bar.next()
 
     bar.finish()

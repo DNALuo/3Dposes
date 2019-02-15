@@ -41,17 +41,17 @@ def main():
                 input, label = gt['input'], gt['label']
                 gtpts, center, scale, proj = gt['gtpts'], gt['center'], gt['scale'], gt['proj']
                 input_var = input[:, 0, ].float().cuda(device=opts.device, non_blocking=True)
-                # output = label
-                output = model(input_var)
+                output = label
+                # output = model(input_var)
                 # Test Loss, Err and Acc(PCK)
                 Loss, Err, Acc = AverageMeter(), AverageMeter(), AverageMeter()
                 ref = get_ref(opts.dataset, scale)
                 for j in range(opts.preSeqLen):
-                    pred_hm = get_preds(output[:, j, ].float())
-                    pred_pts = original_coordinate(pred_hm, center[:, ], scale, opts.outputRes)
-                    err, ne = error(pred_pts, gtpts[:, j, ], ref)
-                    acc, na = accuracy(pred_pts, gtpts[:, j, ], ref)
-                    assert ne == na, "ne must be the same as na"
+                    pred = get_preds(output[:, j, ].float())
+                    pred = original_coordinate(pred, center[:, ], scale, opts.outputRes)
+                    err, ne = error(pred, gtpts[:, j, ], ref)
+                    acc, na = accuracy(pred, gtpts[:, j, ], ref)
+                    # assert ne == na, "ne must be the same as na"
                     Err.update(err)
                     Acc.update(acc)
                     print(j, f"{Err.val:.6f}", Acc.val)
@@ -59,12 +59,15 @@ def main():
                 # Visualizer Object
                 ## Initialize
                 v = Visualizer(opts.nJoints, opts.skeleton, opts.outputRes)
-                ## Add input image
-                v.add_img(input[0,0,].transpose(2, 0).numpy().astype(np.uint8))
-                ## Get the predicted joints
-                predJoints = get_preds(output[:, 0, ])
-                # ## Add joints and skeleton to the figure
-                v.add_2d_joints_skeleton(predJoints, (0, 0, 255))
+                # ## Add input image
+                # v.add_img(input[0,0,].transpose(2, 0).numpy().astype(np.uint8))
+                # ## Get the predicted joints
+                # predJoints = get_preds(output[:, 0, ])
+                # # ## Add joints and skeleton to the figure
+                # v.add_2d_joints_skeleton(predJoints, (0, 0, 255))
+                # Transform heatmap to show
+                hm_img = output[0,0,].cpu().detach().numpy()
+                v.add_hm(hm_img)
                 ## Show image
                 v.show_img(pause=True)
                 break
