@@ -47,7 +47,7 @@ def main():
                 Loss, Err, Acc = AverageMeter(), AverageMeter(), AverageMeter()
                 ref = get_ref(opts.dataset, scale)
                 for j in range(opts.preSeqLen):
-                    pred = get_preds(output[:, j, ].float())
+                    pred = get_preds(output[:, j, ].cpu().float())
                     pred = original_coordinate(pred, center[:, ], scale, opts.outputRes)
                     err, ne = error(pred, gtpts[:, j, ], ref)
                     acc, na = accuracy(pred, gtpts[:, j, ], ref)

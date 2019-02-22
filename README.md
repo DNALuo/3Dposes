@@ -2,5 +2,12 @@
 
 First, let us do LSTM for Forecasting
 
-opencv dependency
-	pip install opencv-python
+# Dependency
+- Pytorch   1.0.1
+- Cuda 10.0
+- matplotlib
+- scipy
+- cudnn 7
+- Opencv pip install opencv-python
+- h5py
+
