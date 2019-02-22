@@ -17,7 +17,7 @@ from utils.utils import adjust_learning_rate
 def main():
     # Parse the options
     opts = Opts().parse()
-    opts.device = torch.device('cuda:{}'.format(opts.gpu[0]))
+    opts.device = torch.device(f'cuda:{opts.gpu[0]}')
     print(opts.expID, opts.task)
     # Record the start time
     time_start = time.time()

@@ -41,8 +41,8 @@ def main():
                 input, label = gt['input'], gt['label']
                 gtpts, center, scale, proj = gt['gtpts'], gt['center'], gt['scale'], gt['proj']
                 input_var = input[:, 0, ].float().cuda(device=opts.device, non_blocking=True)
-                output = label
-                # output = model(input_var)
+                # output = label
+                output = model(input_var)
                 # Test Loss, Err and Acc(PCK)
                 Loss, Err, Acc = AverageMeter(), AverageMeter(), AverageMeter()
                 ref = get_ref(opts.dataset, scale)
