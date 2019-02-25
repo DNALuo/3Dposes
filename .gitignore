@@ -27,3 +27,6 @@ pose-hg-3d
 
 # ignore all the trained models
 *.pth
+
+# ignore 2D pose estimation submodule
+2Dpose/

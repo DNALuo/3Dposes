@@ -59,13 +59,12 @@ class HourglassLSTM(nn.Module):
     """
     One Hourglass with LSTM.
     """
-
-    def __init__(self, nFeats, n, nModules, hiddenSize, numLayers, seqLength):
+    def __init__(self, nFeats, nRes, nModules, hiddenSize, numLayers, seqLength):
         super(HourglassLSTM, self).__init__()
         # Parameters
         ## Hyperparameters for Hourglass
         self.nFeats = nFeats
-        self.n = n
+        self.n = nRes
         self.nModules = nModules
         ## Hyperparameters for LSTM
         self.hiddenSize = hiddenSize
@@ -73,28 +72,31 @@ class HourglassLSTM(nn.Module):
         self.seqLength = seqLength
 
         # Network
-        self.residual = Residual(self.nFeats, self.nFeats)
-        self.clstm1 = CLSTM(self.nFeats, self.hiddenSize, self.numLayers, self.seqLength, 2**(n+2))
+        self.res1 = Residual(self.nFeats, self.nFeats)
+        self.clstm1 = CLSTM(self.nFeats, self.hiddenSize, self.numLayers, self.seqLength, 2**(nRes+2))
         self.maxpool = nn.MaxPool2d(kernel_size=2, stride=2)
+        self.res2 = Residual(self.nFeats, self.nFeats)
         if self.n > 1:
-            self.hglstm = HourglassLSTM(self.nFeats, n-1, self.nModules, self.hiddenSize,
+            self.hglstm = HourglassLSTM(self.nFeats, nRes-1, self.nModules, self.hiddenSize,
                                         self.numLayers, self.seqLength)
         else:
-            self.clstm2 = CLSTM(self.nFeats, self.hiddenSize, self.numLayers, self.seqLength, 2**(n+1))
+            self.res3 = Residual(self.nFeats, self.nFeats)
+            self.clstm2 = CLSTM(self.nFeats, self.hiddenSize, self.numLayers, self.seqLength, 2**(nRes+1))
+        self.res4 = Residual(self.nFeats, self.nFeats)
 
     def forward(self, inp):
         # Upper Branch
-        up1 = self.residual(inp)
+        up1 = self.res1(inp)
         up1 = self.clstm1(up1)
         # Lower Branch
         x = self.maxpool(inp)
-        x = self.residual(x)
+        x = self.res2(x)
         if self.n > 1:
             x = self.hglstm(x)
         else:
-            x = self.residual(x)
+            x = self.res3(x)
             x = self.clstm2(x)
-        x = self.residual(x)
+        x = self.res4(x)
         up2 = f.interpolate(x, scale_factor=2, mode='nearest')
 
         return up1 + up2
