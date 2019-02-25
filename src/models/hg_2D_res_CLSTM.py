@@ -21,7 +21,7 @@ class CLSTM(nn.Module):
         self.res = res
 
         # torch.nn.LSTM(input_size,hidden_size,num_layers)
-        self.lstm = nn.LSTM(self.inputSize, self.hiddenSize, self.numLayers)
+        self.lstm = nn.LSTM(self.inputSize, self.hiddenSize, self.numLayers, batch_first=True)
 
     def forward(self, inp):
         # Replicate encoder output
