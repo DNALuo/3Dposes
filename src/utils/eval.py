@@ -41,7 +41,7 @@ def get_preds(hm):
     """
     assert len(hm.shape) == 4, 'Input must be a 4-D tensor'
     res = hm.shape[2]
-    hm_reshape = hm.reshape(hm.shape[0], hm.shape[1], hm.shape[2] * hm.shape[3]).detach()
+    hm_reshape = hm.reshape(hm.shape[0], hm.shape[1], hm.shape[2] * hm.shape[3]).cpu().detach()
     idx = np.argmax(hm_reshape, axis=2)
     preds = torch.zeros((hm.shape[0], hm.shape[1], 2))
     for i in range(hm.shape[0]):
